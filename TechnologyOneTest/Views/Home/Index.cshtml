@@ -1,0 +1,219 @@
+﻿@{
+    ViewData["Title"] = "Technology One Test - Numbers to Words";
+}
+
+<div class="text-center">
+    <h1 class="display-5">Welcome!</h1>    
+    <p>Please enter a number below that will be converted into words</p>
+</div>
+
+
+
+<div class="card text-bg-dark">
+    <div class="card-header text-center">
+        Number to Words Converter
+    </div>
+    <div class="card-body">
+        
+        <div class="input-group">
+            <input type="text" class="form-control" maxlength="64" id="number_input" placeholder="Number to Convert eg. 12345" />
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Settings</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" id="link_currency" href="#">Number is Currency Disabled</a></li>
+                <li><a class="dropdown-item" id="link_auto_submit" href="#">Auto Submit Enabled</a></li>
+            </ul>
+            <button type="button" id="number_submit" class="btn btn-outline-primary">Convert</button>
+        </div>
+        <div class="p-0 m-1 text-end setting-change text-muted small">&nbsp;</div>
+        <div class="alert alert-primary mt-2 text-center" role="alert" style="display:none;">
+            
+        </div>
+    </div>
+    
+</div>
+
+
+@section Scripts {
+    <style type="text/css">
+
+        html, body {
+            margin: 0;
+            height: 100%;
+        }
+
+        body > div.container {
+            height:calc(100% - 100px);
+        }
+
+
+        div.card {
+            background-color: #e5e5e5;
+        }
+        div.card-header {
+            font-weight:bold;
+        }
+    </style>
+    <script type="text/javascript">
+        
+    
+        $(function () {
+        
+            var auto_submit = true;
+            var currency = false;
+            var submitted = false;
+
+            var clear_timeout = null;
+
+            var typing = function (e) { 
+                console.log(e);                
+                if (auto_submit) { 
+                    submit();
+                }
+            };
+            var toggle_auto_submit = function (e) {
+                e.preventDefault();
+                auto_submit = !auto_submit;
+                var m = 'Auto Submit ' + (auto_submit ? 'Enabled' : "Disabled");
+                $('#link_auto_submit').text(m);                
+                set_message(m);                
+            }
+            var toggle_currency = function (e) {
+                e.preventDefault();
+                currency = !currency;
+                var m = 'Number is Currency ' + (currency ? 'Enabled' : "Disabled");
+                $('#link_currency').text(m);
+                set_message(m);
+                if (submitted) {
+                    submit();
+                }
+                //return false;
+            };
+
+            var set_message = function (message) { 
+                if (clear_timeout){
+                    clearTimeout(clear_timeout);
+                }
+                if (message == null || message == '') {
+                    $('div.setting-change').html('&nbsp;');
+                } else {
+                    $('div.setting-change').text(message);
+                    clear_timeout = setTimeout(set_message.bind(this, null), 3000);
+                }
+
+            }
+
+            $('#link_currency').on('click', toggle_currency);
+            $('#link_auto_submit').on('click', toggle_auto_submit);
+
+            var submit = function () {
+
+                var a = $('div.alert');
+                a.removeClass('alert-danger').removeClass('alert-primary').addClass('alert-info')
+                a.text('Please Wait');
+                submitted = true;
+                (async () => {
+
+                    const data = {
+                        value: $('input#number_input').val(),
+                        currency: currency
+                    };
+                    if (data.value == '' || data.value == '-' || data.value == '.') {
+                        a.text('');
+                        a.hide();
+                    } else {
+                        const response = await fetch('/Home/ConvertNumberToString', {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        });
+                        // Check if input has changed or it auto submit is off
+                        if ((!auto_submit) || (data.value == $('input#number_input').val()) || (data.currency != currency)) {
+                            const content = await response.json();
+                            a.text(content.message);
+                            if (content.valid) {
+                                a.removeClass('alert-danger').addClass('alert-primary');
+                            } else {
+                                a.removeClass('alert-primary').addClass('alert-danger');
+                            }
+                            a.removeClass('alert-info');
+                            a.show();
+                        }
+                    }
+                })();
+
+            };
+
+            var validate_input = function (e) {
+                var current = $(e.currentTarget).val()
+                var empty = current == '';
+                console.log(e.which);
+                if (e.ctrlKey || e.altKey) { 
+                    return true;
+                }
+                if (e.which == 13) {
+                    submit();
+                    return false;
+                }
+                
+                if (e.which >= 48 && e.which <= 57) {
+                    // Numbers
+                    if (!e.shiftKey) {
+                        return true;
+                    }
+                }
+                if (e.which == 8 || e.which == 13 || e.which == 46) {
+                    return true;
+                }
+                if (e.which >= 37 && e.which <= 40) {
+                    if (!e.shiftKey) {
+                        // Numbers
+                        return true;
+                    }
+                }
+                // . If they've already put in a decimal place, prevent them from putting in another
+                if (e.which == 190) { 
+                    if (current.indexOf('.') < 0) { 
+                        return true;
+                    }
+                }
+
+                if (e.which == 189) { 
+                    if (empty) { 
+                        return true;
+                    }
+                }
+                // Basic comma limiting, prevent from 2 next to each other ( they're ignored anyway )
+                if (e.which == 188) { 
+                    if (!empty) {
+                        if (!current.endsWith(',')) { 
+                            return true;
+                        }
+                    }
+                }
+                return false;
+
+
+            }
+
+            $('input#number_input')
+                .on('keydown', validate_input)
+                .on('input', typing)
+                .on('paste', function (e) { 
+                    console.log(e);
+                    console.log(e.currentTarget.value);
+                });
+            $('button#number_submit').on('click', submit);
+
+
+
+
+        });
+
+
+  
+
+    </script>
+}
