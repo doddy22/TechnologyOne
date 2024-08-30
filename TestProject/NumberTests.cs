@@ -157,6 +157,8 @@ namespace TestProject {
             string[] invalid = new string[] {
         "5.34.23",
         "5clic",
+        "jksfsdf.fsdf",
+        "gdgggd2sfsdf",        
         "9,999,999,999,999,999,999,999,999,999,999,999,999,999,999,999,999,999,999,999,999,999,999" // Bigger than currently allowed
       };
 
