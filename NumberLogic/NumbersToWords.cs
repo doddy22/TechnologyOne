@@ -6,11 +6,15 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace NumberLogic {
-    public class Numbers {
+
+    /// <summary>
+    /// The logic for converting numbers to words
+    /// </summary>
+    public class NumbersToWords {
 
         /// <summary>
-        /// Large Numbers
-        /// http://sunshine.chpc.utah.edu/Labs/ScientificNotation/ManSciNot1/table.html
+        /// Large Numbers Sizes
+        /// Reference for the numbers - http://sunshine.chpc.utah.edu/Labs/ScientificNotation/ManSciNot1/table.html
         /// </summary>
         private enum NumberSizes {
             Digits = 0, // Anything less than 1000
@@ -37,6 +41,9 @@ namespace NumberLogic {
             Vigintillion = 21
         }
 
+        /// <summary>
+        /// Our base list of Numbers/words
+        /// </summary>
         private enum NumberValues {
             Zero = 0,
             // Digits
@@ -81,7 +88,13 @@ namespace NumberLogic {
             public int Value;
         }
 
-
+        /// <summary>
+        /// Converts the Given Number to Words
+        /// </summary>
+        /// <param name="Number">The Number you want to convert to words</param>
+        /// <param name="Dollars">When true, the words are in the form of dollars and cents</param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public string Convert(string Number, bool Dollars) {
             if (string.IsNullOrEmpty(Number)) {
                 throw new Exception("Invalid Number");
@@ -110,13 +123,17 @@ namespace NumberLogic {
                 }
             }
 
-            var right_side = ConvertRightSide(splits.right, Dollars);
-            if (!string.IsNullOrEmpty(right_side)) {
-                if (converted.Any()) {
-                    converted.Add(Dollars ? "and" : "Point");
+            if (!string.IsNullOrEmpty(splits.right)) {
+                var right_side = ConvertRightSide(splits.right, Dollars);
+                if (!string.IsNullOrEmpty(right_side)) {
+                    if (converted.Any()) {
+                        converted.Add(Dollars ? "and" : "Point");
+                    } else if (!Dollars) {
+                        converted.Add("Point");
+                    }
+                    converted.Add(right_side);
+
                 }
-                converted.Add(right_side);
-                
             }
             if (Dollars && (!converted.Any())) {
                 return "Zero Dollars";
@@ -128,6 +145,7 @@ namespace NumberLogic {
 
         /// <summary>
         /// Split the Number, so that we have what's on either side of the decimal point
+        /// Also does some basic error correcting to minor malformed numbers
         /// </summary>
         /// <param name="Number"></param>
         /// <returns></returns>
@@ -159,18 +177,10 @@ namespace NumberLogic {
             }
 
             // Break the number up into groups of 3
-            NumberPart[] parts = Number.Reverse()
-              .Select((c, index) => new {
-                  value = (int)Char.GetNumericValue(c) * ((int)Math.Pow(10, (index % 3))),
-                  grouping = (int)(index / 3M)
-              }).GroupBy(x => x.grouping)
-              .Select(x => new NumberPart() {
-                  Size = (NumberSizes)x.First().grouping,
-                  Value = x.Sum(v => v.value)
-              }).OrderByDescending(x => x.Size).ToArray();
+            NumberPart[] parts = BreakIntoParts(Number);
 
             if (parts.Length == 0) {
-                return "";
+                return ""; // No Parts? Return an Empty string ie No Words
             } else if (parts.Length == 1) {
                 return Convert(parts[0]);
             }
@@ -186,6 +196,8 @@ namespace NumberLogic {
                     values.Add(Convert(part));
                 }
             }
+
+            // Insert an 'and' if needed
             if (values.Count > 1) {
                 if (parts.Last().Value < 100) {
                     values.Insert(values.Count - 1, "and");
@@ -195,7 +207,32 @@ namespace NumberLogic {
 
         }
 
+        /// <summary>
+        /// Breaks a Number into groups of 3 digits and tagging them with their appriapte sizing ( millions, billions etc)
+        /// </summary>
+        /// <param name="Number"></param>
+        /// <returns></returns>
+        private NumberPart[] BreakIntoParts(string Number) { 
+        
+            return Number.Reverse()
+              .Select((c, index) => new {
+                  value = (int)Char.GetNumericValue(c) * ((int)Math.Pow(10, (index % 3))),
+                  grouping = (int)(index / 3M)
+              }).GroupBy(x => x.grouping)
+              .Select(x => new NumberPart() {
+                  Size = (NumberSizes)x.First().grouping,
+                  Value = x.Sum(v => v.value)
+              }).OrderByDescending(x => x.Size).ToArray();
 
+        }
+
+        /// <summary>
+        /// Converts the Right Side of the Decimal Place
+        /// </summary>
+        /// <param name="Number"></param>
+        /// <param name="Dollars">Displays as Cents when true</param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         private string ConvertRightSide(string Number, bool Dollars) {
 
             if (Dollars) {
@@ -213,7 +250,7 @@ namespace NumberLogic {
                     if (cents > 0) {
                         return $"{Convert(cents)} Cents";
                     }
-                } catch (Exception ex) {
+                } catch (Exception) {
                     throw new Exception("Invalid Cents Value");
                 }
 
@@ -263,26 +300,26 @@ namespace NumberLogic {
         }
 
 
+        /// <summary>
+        /// Converts a Number that is less that 100 to words
+        /// Utility function that does the majority of the conversion
+        /// </summary>
+        /// <param name="Number"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         private string Convert(int Number) {
 
             if (Number < 100) {
 
                 if (Enum.IsDefined(typeof(NumberValues), Number)) {
+                    // Is one of the predefined values, so just return the words
                     return ((NumberValues)Number).ToString();
                 } else {
+                    // Create the words by spliting the value into it's 2 base components
                     int digits = Number % 10;
                     int tens = Number - digits;
-                    if (tens > 0) {
-                        if (digits > 0) {
-                            return Convert(tens) + " " + Convert(digits);
-                        } else {
-                            return Convert(tens);
-                        }
-                    }
-                    Convert(digits);
-
+                    return $"{Convert(tens)} {Convert(digits)}";
                 }
-
             }
             throw new Exception("Unable to Convert Number");
         }

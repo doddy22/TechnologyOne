@@ -1,5 +1,6 @@
 html {
   font-size: 14px;
+  display:flex;
 }
 
 @media (min-width: 768px) {
@@ -18,5 +19,11 @@ html {
 }
 
 body {
-  margin-bottom: 60px;
+    background-color: #efefef;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
 }

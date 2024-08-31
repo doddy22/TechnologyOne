@@ -5,18 +5,14 @@ using TechnologyOneTest.Models;
 namespace TechnologyOneTest.Controllers {
   public class HomeController : Controller {
     private readonly ILogger<HomeController> _logger;
-        private readonly NumberLogic.Numbers _numbers;
+        private readonly NumberLogic.NumbersToWords _numbersToWords;
 
-    public HomeController(ILogger<HomeController> logger, NumberLogic.Numbers numbers) {
+    public HomeController(ILogger<HomeController> logger, NumberLogic.NumbersToWords numbersToWords) {
       _logger = logger;
-            _numbers = numbers;
+      _numbersToWords = numbersToWords;
     }
 
     public IActionResult Index() {
-      return View();
-    }
-
-    public IActionResult Privacy() {
       return View();
     }
 
@@ -25,15 +21,20 @@ namespace TechnologyOneTest.Controllers {
       return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
+    /// <summary>
+    /// Endpoint to get the words for a Number
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
     [HttpPost]
     public JsonResult ConvertNumberToString([FromBody]NumberJson data) {
-            try {
-                var result = _numbers.Convert(data.value, data.currency);
-                return Json(new { valid = true, message = result });
-            } catch (Exception ex) {
+        try {
+            var result = _numbersToWords.Convert(data.value, data.currency);
+            return Json(new { valid = true, message = result });
+        } catch (Exception ex) {
 
-                return Json(new { valid = false, message = ex.Message });
-            }
+            return Json(new { valid = false, message = ex.Message });
+        }
             
       
     }

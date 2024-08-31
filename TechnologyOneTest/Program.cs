@@ -2,7 +2,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddTransient<NumberLogic.Numbers>();
+builder.Services.AddTransient<NumberLogic.NumbersToWords>();
 
 var app = builder.Build();
 
